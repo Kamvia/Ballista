@@ -1,0 +1,14 @@
+# File: ballista/examples/streams.toml
+name = "streams"
+
+[target]
+base_url = "http://127.0.0.1:8080/"
+
+[load]
+mode = "users"
+stages = [{ duration = "10s", target = 6 }]
+
+[[scenario]]
+name = "streams"
+script = "scenarios/streams.rhai"
+wait = { constant = "200ms" }

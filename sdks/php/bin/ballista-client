@@ -1,0 +1,198 @@
+#!/usr/bin/env php
+<?php
+// File: ballista/sdks/php/bin/ballista-client
+
+declare(strict_types=1);
+
+use Ballista\Client\Bundle;
+use Ballista\Client\Client;
+use Ballista\Client\Exception\ApiException;
+use Ballista\Client\Exception\BallistaException;
+use Ballista\Client\Exception\RunTimeoutException;
+use Ballista\Client\Model\Run;
+use Ballista\Client\Model\RunState;
+use Ballista\Client\Model\Snapshot;
+
+foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php'] as $autoload) {
+    if (is_file($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+
+const EXIT_ERROR = 1;
+const EXIT_FAILED = 2;
+const EXIT_TIMEOUT = 3;
+const USAGE = <<<TXT
+usage: ballista-client [--url=URL] [--ca=FILE] <command>
+  submit <plan.json|plan.toml> [--file=REL=PATH]... [--users=N] [--spawn-rate=N] [--run-time=D] [--iterations=N]
+         [--tags=a,b] [--host=URL] [--label=k=v]... [--no-wait] [--timeout=SECS] [--quiet] [--report=DIR]
+  status <run-id> | stop <run-id> | wait <run-id> | list
+  report <run-id> [--name=report.html] [--out=DIR]
+
+TXT;
+
+/** @return array{0: list<string>, 1: array<string, list<string>|true>} */
+function parse_cli(array $argv): array
+{
+    $pos = [];
+    $opts = [];
+    foreach (array_slice($argv, 1) as $a) {
+        if (str_starts_with($a, '--')) {
+            [$k, $v] = array_pad(explode('=', substr($a, 2), 2), 2, null);
+            if ($v === null) {
+                $opts[$k] = true;
+            } else {
+                $opts[$k] = [...(is_array($opts[$k] ?? null) ? $opts[$k] : []), $v];
+            }
+        } else {
+            $pos[] = $a;
+        }
+    }
+    return [$pos, $opts];
+}
+
+function opt(array $opts, string $k): ?string
+{
+    $v = $opts[$k] ?? null;
+    return is_array($v) ? end($v) : null;
+}
+
+function print_summary(Run $run): void
+{
+    echo "run {$run->id} {$run->state->value}\n";
+    if ($run->error !== null) {
+        echo "error: {$run->error}\n";
+    }
+    $s = $run->summary;
+    if ($s === null) {
+        return;
+    }
+    printf("requests=%d failures=%d rps=%.1f p50=%.1fms p95=%.1fms p99=%.1fms duration=%.0fs\n", $s->requests, $s->failures, $s->rps, $s->p50Ms, $s->p95Ms, $s->p99Ms, $s->durationSecs);
+    foreach ($s->thresholds as $t) {
+        printf("threshold %s %s actual=%s %s\n", $t->metric, $t->request, $t->actual === null ? 'n/a' : sprintf('%.3f', $t->actual), $t->passed ? 'pass' : 'FAIL');
+    }
+}
+
+function exit_code(Run $run): int
+{
+    return match ($run->state) {
+        RunState::Passed => 0,
+        RunState::Failed, RunState::Stopped => EXIT_FAILED,
+        default => EXIT_ERROR,
+    };
+}
+
+[$pos, $opts] = parse_cli($argv);
+$cmd = $pos[0] ?? null;
+$arg = $pos[1] ?? null;
+if ($cmd === null || isset($opts['help'])) {
+    fwrite(STDOUT, USAGE);
+    exit($cmd === null ? EXIT_ERROR : 0);
+}
+
+try {
+    $client = new Client(opt($opts, 'url'), caFile: opt($opts, 'ca'));
+    $need = static function () use ($arg, $cmd): string {
+        if ($arg === null) {
+            throw new BallistaException("{$cmd} requires an argument");
+        }
+        return $arg;
+    };
+    switch ($cmd) {
+        case 'submit':
+            $labels = [];
+            foreach ((array) ($opts['label'] ?? []) as $l) {
+                [$k, $v] = array_pad(explode('=', (string) $l, 2), 2, null);
+                if ($v === null || $k === '') {
+                    throw new BallistaException("label '{$l}' must be key=value");
+                }
+                $labels[$k] = $v;
+            }
+            $raw = @file_get_contents($need());
+            if ($raw === false) {
+                throw new BallistaException("cannot read {$need()}");
+            }
+            $plan = $raw;
+            if (str_ends_with(strtolower($need()), '.json')) {
+                $doc = json_decode($raw, true, 64, JSON_THROW_ON_ERROR);
+                if (!is_array($doc) || array_is_list($doc)) {
+                    throw new BallistaException('plan document must be a JSON object');
+                }
+                $plan = $doc;
+            }
+            $bundle = new Bundle($plan, $labels);
+            foreach ((array) ($opts['file'] ?? []) as $spec) {
+                [$rel, $local] = array_pad(explode('=', (string) $spec, 2), 2, null);
+                if ($local === null || $rel === '') {
+                    throw new BallistaException("--file '{$spec}' must be REL=PATH");
+                }
+                $bundle->addPath($rel, $local);
+            }
+            $overrides = array_filter([
+                'users' => opt($opts, 'users') !== null ? (float) opt($opts, 'users') : null,
+                'spawn_rate' => opt($opts, 'spawn-rate') !== null ? (float) opt($opts, 'spawn-rate') : null,
+                'run_time' => opt($opts, 'run-time'),
+                'iterations' => opt($opts, 'iterations') !== null ? (int) opt($opts, 'iterations') : null,
+                'tags' => opt($opts, 'tags') !== null ? explode(',', (string) opt($opts, 'tags')) : null,
+                'host' => opt($opts, 'host'),
+            ], static fn ($v) => $v !== null);
+            $info = $client->uploadBundle($bundle);
+            $run = $client->createRun($info, $overrides, $labels);
+            echo "queued run {$run->id} (bundle {$info->id})\n";
+            if (isset($opts['no-wait'])) {
+                exit(0);
+            }
+            $last = -1;
+            $progress = isset($opts['quiet']) ? null : static function (Snapshot $s) use (&$last): void {
+                $sec = (int) $s->elapsedSecs;
+                if ($sec === $last) {
+                    return;
+                }
+                $last = $sec;
+                fprintf(STDERR, "  t=%ds users=%d rps=%.1f p95=%.1fms failures=%d\n", $sec, $s->users, $s->total->rps, $s->total->p95Ms, $s->total->failures);
+            };
+            $timeout = opt($opts, 'timeout');
+            $run = $client->wait($run->id, $timeout !== null ? (float) $timeout : null, $progress);
+            print_summary($run);
+            $report = opt($opts, 'report');
+            if ($report !== null && $run->summary !== null) {
+                if (!is_dir($report) && !mkdir($report, 0o755, true)) {
+                    throw new BallistaException("cannot create {$report}");
+                }
+                $client->download($run->id, 'report.json', $report);
+                $client->download($run->id, 'report.html', $report);
+            }
+            exit(exit_code($run));
+        case 'status':
+            print_summary($client->getRun($need()));
+            exit(0);
+        case 'stop':
+            echo "run {$need()} {$client->stopRun($need())->state->value}\n";
+            exit(0);
+        case 'wait':
+            $run = $client->wait($need());
+            print_summary($run);
+            exit(exit_code($run));
+        case 'report':
+            echo $client->download($need(), opt($opts, 'name') ?? 'report.html', opt($opts, 'out') ?? '.') . "\n";
+            exit(0);
+        case 'list':
+            foreach ($client->listRuns(limit: 50)['items'] as $r) {
+                echo json_encode(['id' => $r->id, 'state' => $r->state->value, 'plan' => $r->planName, 'created_at' => $r->createdAt], JSON_UNESCAPED_SLASHES) . "\n";
+            }
+            exit(0);
+        default:
+            fwrite(STDERR, USAGE);
+            exit(EXIT_ERROR);
+    }
+} catch (RunTimeoutException $e) {
+    fwrite(STDERR, "error: {$e->getMessage()}\n");
+    exit(EXIT_TIMEOUT);
+} catch (ApiException $e) {
+    fwrite(STDERR, "error: {$e->status} {$e->errorCode}: {$e->detail}\n");
+    exit(EXIT_ERROR);
+} catch (BallistaException | \JsonException $e) {
+    fwrite(STDERR, "error: {$e->getMessage()}\n");
+    exit(EXIT_ERROR);
+}

@@ -1,0 +1,86 @@
+# File: ballista/Cargo.toml
+[package]
+name = "ballista"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+description = "Scriptable, coordinated-omission-aware load testing engine with live dashboard"
+repository = "https://github.com/Kamvia/Ballista"
+readme = "README.md"
+keywords = ["load-testing", "performance", "benchmark", "http", "stress-testing"]
+categories = ["command-line-utilities", "development-tools::testing"]
+publish = false
+
+[lib]
+name = "ballista"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ballista"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1.54", features = ["rt-multi-thread", "macros", "sync", "time", "signal", "net", "io-util", "fs"] }
+tokio-util = "0.7.20"
+futures-util = { version = "0.3.34", default-features = false, features = ["std", "sink"] }
+reqwest = { version = "0.13.5", features = ["json", "query", "form", "cookies", "gzip", "brotli", "http2", "multipart", "socks", "stream"] }
+tokio-tungstenite = { version = "0.30", features = ["rustls-tls-webpki-roots"] }
+axum = { version = "=0.8.8", features = ["macros", "ws"] }
+axum-server = { version = "0.8.0", features = ["tls-rustls"] }
+rhai = { version = "1.27", features = ["sync", "serde"] }
+hdrhistogram = "7.6"
+serde = { version = "1.0.229", features = ["derive", "rc"] }
+serde_json = "1"
+toml = "1.1"
+clap = { version = "4.6", features = ["derive", "env"] }
+humantime = "2.4"
+thiserror = "2.0"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
+parking_lot = "0.13"
+argon2 = "0.6"
+rand = "0.10"
+getrandom = "0.4"
+base64 = "0.23"
+subtle = "2.6"
+url = "2.5"
+bytes = "1.12"
+http = "1"
+sha2 = "0.11"
+rustls = { version = "0.23", default-features = false, features = ["std", "tls12", "aws_lc_rs"] }
+rustls-pki-types = { version = "1", features = ["std"] }
+hex = "0.4"
+mime_guess = "2"
+webpki-roots = "1"
+rustls-platform-verifier = "0.7"
+chrono = { version = "0.4", default-features = false, features = ["clock"], optional = true }
+tonic = { version = "0.14", default-features = false, features = ["channel", "codegen", "tls-aws-lc", "tls-webpki-roots"], optional = true }
+prost = { version = "0.14", optional = true }
+prost-reflect = { version = "0.16", features = ["serde"], optional = true }
+rumqttc = { version = "0.25", optional = true }
+rskafka = { version = "0.6", default-features = false, features = ["transport-tls", "compression-gzip"], optional = true }
+sqlx = { version = "0.9", default-features = false, features = ["any", "postgres", "mysql", "runtime-tokio", "tls-rustls-aws-lc-rs", "json"], optional = true }
+opentelemetry = { version = "0.33", default-features = false, features = ["metrics"], optional = true }
+opentelemetry_sdk = { version = "0.33", default-features = false, features = ["metrics"], optional = true }
+opentelemetry-otlp = { version = "0.33", default-features = false, features = ["http-proto", "reqwest-blocking-client", "metrics"], optional = true }
+
+[features]
+default = []
+grpc = ["dep:tonic", "dep:prost", "dep:prost-reflect"]
+mqtt = ["dep:rumqttc"]
+kafka = ["dep:rskafka", "dep:chrono"]
+sql = ["dep:sqlx"]
+otel = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp"]
+full = ["grpc", "mqtt", "kafka", "sql", "otel"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+strip = true
+
+[dev-dependencies]
+axum = { version = "=0.8.8", features = ["macros", "ws", "multipart"] }

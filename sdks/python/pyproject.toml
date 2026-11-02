@@ -1,0 +1,38 @@
+# File: ballista/sdks/python/pyproject.toml
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ballista-client"
+version = "0.1.0"
+description = "Client for the load test run manager API"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+  "httpx>=0.28,<1",
+  "pydantic>=2.9,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/Kamvia/Ballista"
+Source = "https://github.com/Kamvia/Ballista/tree/main/sdks/python"
+Issues = "https://github.com/Kamvia/Ballista/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "mypy>=1.13"]
+
+[project.scripts]
+ballista-client = "ballista_client.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ballista_client"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

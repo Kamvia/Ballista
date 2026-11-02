@@ -1,0 +1,28 @@
+// File: ballista/examples/proto/inventory.proto
+// Build the descriptor set with:
+// protoc --include_imports --descriptor_set_out=examples/proto/inventory.pb examples/proto/inventory.proto
+syntax = "proto3";
+
+package shop;
+
+message ItemRequest {
+  int32 id = 1;
+}
+
+message Item {
+  int32 id = 1;
+  string name = 2;
+  int64 stock = 3;
+}
+
+message Summary {
+  int32 count = 1;
+  int64 total_stock = 2;
+}
+
+service Inventory {
+  rpc GetItem (ItemRequest) returns (Item);
+  rpc ListItems (ItemRequest) returns (stream Item);
+  rpc Restock (stream Item) returns (Summary);
+  rpc Watch (stream ItemRequest) returns (stream Item);
+}

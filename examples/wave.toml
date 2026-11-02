@@ -1,0 +1,20 @@
+# File: ballista/examples/wave.toml
+name = "sine wave"
+
+[target]
+base_url = "http://127.0.0.1:8080/"
+timeout = "5s"
+
+[load]
+mode = "users"
+shape_script = "shapes/wave.rhai"
+graceful_stop = "3s"
+
+[[scenario]]
+name = "catalog"
+native = "catalog"
+wait = { poisson = "300ms" }
+
+[report]
+csv = "out/wave"
+request_log = "out/wave_requests.csv"

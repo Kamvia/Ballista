@@ -1,0 +1,60 @@
+# File: ballista/examples/plan.toml
+name = "shop smoke"
+
+[target]
+base_url = "http://127.0.0.1:8080/"
+timeout = "10s"
+connect_timeout = "3s"
+headers = { accept = "application/json" }
+
+[load]
+mode = "users"
+graceful_stop = "5s"
+stages = [
+  { duration = "10s", target = 50 },
+  { duration = "20s", target = 50 },
+  { duration = "5s", target = 0 },
+]
+
+[[scenario]]
+name = "shopper"
+weight = 4
+script = "scenarios/shop.rhai"
+wait = { between = ["200ms", "800ms"] }
+
+[[scenario]]
+name = "realtime"
+script = "scenarios/realtime.rhai"
+fixed_count = 5
+tags = ["realtime"]
+wait = { pacing = "1s" }
+
+[[feeder]]
+name = "users"
+path = "data/users.csv"
+mode = "sequential"
+
+[[threshold]]
+metric = "p95"
+max = 500.0
+
+[[threshold]]
+metric = "error_rate"
+max = 0.05
+abort_on_fail = true
+abort_delay = "15s"
+
+[[threshold]]
+metric = "p99"
+request = "item detail"
+max = 200.0
+
+[[threshold]]
+metric = "p95"
+request = "checkout"
+max = 400.0
+
+[report]
+percentiles = [75, 99.9]
+json = "out/report.json"
+html = "out/report.html"

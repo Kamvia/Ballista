@@ -1,0 +1,636 @@
+{
+  "title": "Load test",
+  "uid": "load-test-influx",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "refresh": "5s",
+  "tags": [
+    "load-test"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "influxdb",
+        "label": "Data source",
+        "current": {}
+      },
+      {
+        "name": "plan",
+        "type": "query",
+        "label": "Plan",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${datasource}"
+        },
+        "query": "SHOW TAG VALUES FROM \"ballista_run\" WITH KEY = \"plan\"",
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "refresh": 2,
+        "current": {}
+      },
+      {
+        "name": "scenario",
+        "type": "query",
+        "label": "Scenario",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${datasource}"
+        },
+        "query": "SHOW TAG VALUES FROM \"ballista_requests\" WITH KEY = \"scenario\"",
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "refresh": 2,
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Users",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT last(\"users\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Requests/s",
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT last(\"rps\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Failures/s",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT last(\"fail_rps\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "p95",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT last(\"p95_ms\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Requests",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT last(\"requests\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Dropped iterations",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT last(\"dropped\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Throughput",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT mean(\"rps\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "req/s"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "query": "SELECT mean(\"fail_rps\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "fail/s"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Latency",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT mean(\"p50_ms\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "p50"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "query": "SELECT mean(\"p95_ms\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "p95"
+        },
+        {
+          "refId": "C",
+          "rawQuery": true,
+          "query": "SELECT mean(\"p99_ms\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "p99"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Users and target",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT mean(\"users\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "users"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "query": "SELECT mean(\"target\") FROM \"ballista_run\" WHERE \"plan\" =~ /^$plan$/ AND $timeFilter GROUP BY time($__interval) fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "target"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Request p95 by name",
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT mean(\"p95_ms\") FROM \"ballista_requests\" WHERE \"plan\" =~ /^$plan$/ AND \"scenario\" =~ /^$scenario$/ AND \"kind\" = 'request' AND $timeFilter GROUP BY time($__interval), \"method\", \"name\" fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "$tag_method $tag_name"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Request rate by name",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT mean(\"rps\") FROM \"ballista_requests\" WHERE \"plan\" =~ /^$plan$/ AND \"scenario\" =~ /^$scenario$/ AND \"kind\" = 'request' AND $timeFilter GROUP BY time($__interval), \"method\", \"name\" fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "$tag_method $tag_name"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Transaction p95",
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "query": "SELECT mean(\"p95_ms\") FROM \"ballista_requests\" WHERE \"plan\" =~ /^$plan$/ AND \"kind\" = 'transaction' AND $timeFilter GROUP BY time($__interval), \"name\" fill(none)",
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${datasource}"
+          },
+          "alias": "$tag_name"
+        }
+      ]
+    }
+  ]
+}

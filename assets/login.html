@@ -1,0 +1,23 @@
+<!-- File: ballista/assets/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Sign in - Load Console</title>
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body class="login-body">
+  <main class="login-card">
+    <div class="brand"><span class="brand-mark"></span>Load Console</div>
+    <form id="login-form" autocomplete="off" novalidate>
+      <label for="password">Admin password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="1024" autofocus>
+      <button type="submit" class="btn primary" id="login-btn">Sign in</button>
+      <p class="form-error" id="login-error" role="alert" hidden></p>
+    </form>
+  </main>
+  <script src="/assets/login.js"></script>
+</body>
+</html>

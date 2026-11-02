@@ -1,0 +1,81 @@
+# File: ballista/examples/steps.toml
+name = "shop steps"
+
+[target]
+base_url = "http://127.0.0.1:8080/"
+headers = { accept = "application/json" }
+
+[load]
+mode = "users"
+stages = [{ duration = "15s", target = 10 }]
+
+[[scenario]]
+name = "buyer"
+wait = { between = ["200ms", "600ms"] }
+
+[[scenario.on_start]]
+feed = "users"
+
+[[scenario.on_start]]
+post = "/login"
+name = "login"
+json = { username = "${users.username}", password = "${users.password}" }
+capture = { token = "json.token" }
+
+[[scenario.step]]
+get = "/items"
+name = "list items"
+query = { q = "item" }
+capture = { item_id = "json.items.2.id" }
+
+[[scenario.step]]
+think = ["100ms", "300ms"]
+
+[[scenario.step]]
+txn_begin = "purchase"
+
+[[scenario.step]]
+get = "/items/${item_id}"
+contains = "stock"
+
+[[scenario.step]]
+post = "/cart"
+name = "add to cart"
+headers = { authorization = "Bearer ${token}" }
+json = { item = "${item_id}", qty = 1, request_id = "${uuid()}" }
+expect = [201, 503]
+
+[[scenario.step]]
+txn_end = "purchase"
+
+[[scenario.step]]
+name = "catalog_page"
+concurrency = 3
+batch = [
+  { get = "/items" },
+  { get = "/items/1", name = "item detail" },
+  { get = "/slow", name = "slow page" },
+]
+
+[[scenario]]
+name = "ticker"
+weight = 1
+
+[[scenario.step]]
+get = "/sse"
+name = "price stream"
+sse = 6
+reconnects = 3
+
+[[feeder]]
+name = "users"
+path = "data/users.csv"
+mode = "sequential"
+
+[[threshold]]
+metric = "p95"
+request = "purchase"
+max = 300.0
+
+[report]
+html = "out/steps.html"

@@ -1,0 +1,34 @@
+# File: ballista/examples/arrival.toml
+name = "api arrival rate"
+
+[target]
+base_url = "http://127.0.0.1:8080/"
+timeout = "5s"
+client = "shared"
+
+[load]
+mode = "arrival_rate"
+max_users = 2000
+preallocate = 100
+graceful_stop = "5s"
+stages = [
+  { duration = "10s", target = 500 },
+  { duration = "20s", target = 2000 },
+  { duration = "10s", target = 2000 },
+]
+
+[[scenario]]
+name = "catalog"
+native = "catalog"
+
+[[threshold]]
+metric = "p99"
+max = 300.0
+
+[[threshold]]
+metric = "dropped_iterations"
+max = 0.0
+
+[report]
+json = "out/arrival.json"
+html = "out/arrival.html"

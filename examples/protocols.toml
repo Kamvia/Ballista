@@ -1,0 +1,35 @@
+# File: ballista/examples/protocols.toml
+name = "protocol mix"
+
+[target]
+base_url = "http://127.0.0.1:8080/"
+timeout = "5s"
+retries = 0
+retry_backoff = "20ms"
+
+[load]
+mode = "users"
+graceful_stop = "3s"
+stages = [{ duration = "3s", target = 10 }, { duration = "9s", target = 10 }]
+
+[[scenario]]
+name = "mix"
+script = "scenarios/protocols.rhai"
+wait = { between = ["50ms", "150ms"] }
+
+[protocols.grpc]
+endpoint = "http://127.0.0.1:50051"
+descriptor_set = "proto/inventory.pb"
+timeout = "3s"
+
+[protocols.mqtt]
+host = "127.0.0.1"
+port = 1883
+timeout = "5s"
+
+[protocols.sql]
+url_env = "BALLISTA_SQL_URL"
+max_connections = 10
+
+[report]
+csv = "out/protocols"

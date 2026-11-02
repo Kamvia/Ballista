@@ -1,0 +1,2599 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Load Test Run Manager API",
+    "version": "1.0.0",
+    "description": "Upload test bundles, queue runs, follow live statistics and fetch reports. Authenticate with `Authorization: Bearer <token>`. Scopes are hierarchical: admin > run > read."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "server"
+    },
+    {
+      "name": "bundles"
+    },
+    {
+      "name": "runs"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Liveness probe",
+        "tags": [
+          "server"
+        ],
+        "responses": {
+          "200": {
+            "description": "Server is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "operationId": "getOpenApi",
+        "summary": "This document",
+        "tags": [
+          "server"
+        ],
+        "responses": {
+          "200": {
+            "description": "OpenAPI document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/whoami": {
+      "get": {
+        "operationId": "whoAmI",
+        "summary": "Identity and scope of the caller",
+        "tags": [
+          "server"
+        ],
+        "responses": {
+          "200": {
+            "description": "Caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhoAmI"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "operationId": "getStatus",
+        "summary": "Active run, queue length and server limits",
+        "tags": [
+          "server"
+        ],
+        "responses": {
+          "200": {
+            "description": "Status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "read"
+      }
+    },
+    "/bundles": {
+      "post": {
+        "operationId": "uploadBundle",
+        "summary": "Store a plan with its assets. Load and duration limits are enforced when a run is created, with its overrides",
+        "tags": [
+          "bundles"
+        ],
+        "responses": {
+          "201": {
+            "description": "Bundle stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleInfo"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Identical bundle already stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleInfo"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Not JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid bundle, plan or policy violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "run",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BundleUpload"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listBundles",
+        "summary": "List stored bundles, newest first",
+        "tags": [
+          "bundles"
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundlePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "read"
+      }
+    },
+    "/bundles/{id}": {
+      "get": {
+        "operationId": "getBundle",
+        "summary": "Get a bundle",
+        "tags": [
+          "bundles"
+        ],
+        "responses": {
+          "200": {
+            "description": "Bundle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteBundle",
+        "summary": "Delete a bundle not used by a queued or running run",
+        "tags": [
+          "bundles"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "In use",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/runs": {
+      "post": {
+        "operationId": "createRun",
+        "summary": "Queue a run of a stored bundle",
+        "tags": [
+          "runs"
+        ],
+        "responses": {
+          "201": {
+            "description": "Run queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Replay of an earlier request with the same Idempotency-Key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bundle not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid overrides or policy violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "x-required-scope": "run",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "Repeating a request with the same key returns the original run."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listRuns",
+        "summary": "List runs, newest first",
+        "tags": [
+          "runs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/RunState"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "next_cursor from the previous page"
+          }
+        ]
+      }
+    },
+    "/runs/{id}": {
+      "get": {
+        "operationId": "getRun",
+        "summary": "Get a run",
+        "tags": [
+          "runs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^r[0-9a-f]{24}$"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteRun",
+        "summary": "Delete a finished run and its artifacts",
+        "tags": [
+          "runs"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not finished",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^r[0-9a-f]{24}$"
+            }
+          }
+        ]
+      }
+    },
+    "/runs/{id}/stop": {
+      "post": {
+        "operationId": "stopRun",
+        "summary": "Cancel a queued run or stop the running one gracefully",
+        "tags": [
+          "runs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already finished",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "run",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^r[0-9a-f]{24}$"
+            }
+          }
+        ]
+      }
+    },
+    "/runs/{id}/stats": {
+      "get": {
+        "operationId": "getRunStats",
+        "summary": "Live statistics of a running run, or the final statistics",
+        "tags": [
+          "runs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^r[0-9a-f]{24}$"
+            }
+          }
+        ]
+      }
+    },
+    "/runs/{id}/events": {
+      "get": {
+        "operationId": "streamRunEvents",
+        "summary": "Server-sent events: `run` (Run) on state changes, `stats` (Snapshot) every second, `end` (Run) when finished",
+        "tags": [
+          "runs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Event stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Too many streams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^r[0-9a-f]{24}$"
+            }
+          }
+        ]
+      }
+    },
+    "/runs/{id}/artifacts/{name}": {
+      "get": {
+        "operationId": "getRunArtifact",
+        "summary": "Download a report of a finished run",
+        "tags": [
+          "runs"
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^r[0-9a-f]{24}$"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "report.json",
+                "report.html",
+                "stats.csv",
+                "history.csv",
+                "failures.csv"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/plans/validate": {
+      "post": {
+        "operationId": "validatePlan",
+        "summary": "Validate a plan (with optional run overrides) without storing it; lists the files a bundle must carry",
+        "tags": [
+          "bundles"
+        ],
+        "x-required-scope": "run",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "plan"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "plan": {
+                    "$ref": "#/components/schemas/PlanSource"
+                  },
+                  "overrides": {
+                    "$ref": "#/components/schemas/RunOverrides"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanCheck"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid plan or policy violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/runs/{id}/compare": {
+      "get": {
+        "operationId": "compareRun",
+        "summary": "Compare a finished run with a baseline run",
+        "tags": [
+          "runs"
+        ],
+        "x-required-scope": "read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^r[0-9a-f]{24}$"
+            }
+          },
+          {
+            "name": "baseline",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "'auto' or a run id"
+          },
+          {
+            "name": "max_regression_pct",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "allowed worsening in percent"
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "comma-separated: p50,p95,p99,avg,error_rate,rps"
+          },
+          {
+            "name": "min_samples",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "minimum requests per row"
+          },
+          {
+            "name": "min_change_ms",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "ignore smaller latency changes"
+          },
+          {
+            "name": "max_error_rate_increase",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "absolute fraction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comparison",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comparison"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Run not finished",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API token issued by the server operator"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid token",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Token lacks the required scope",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Too many requests",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "unauthorized",
+                  "forbidden",
+                  "not_found",
+                  "invalid",
+                  "conflict",
+                  "not_started",
+                  "queue_full",
+                  "rate_limited",
+                  "busy",
+                  "too_large",
+                  "unsupported_media_type",
+                  "internal"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": [
+          "status",
+          "version"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "Scope": {
+        "type": "string",
+        "enum": [
+          "read",
+          "run",
+          "admin"
+        ]
+      },
+      "WhoAmI": {
+        "type": "object",
+        "required": [
+          "name",
+          "scope"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        }
+      },
+      "ServerStatus": {
+        "type": "object",
+        "required": [
+          "version",
+          "active_run",
+          "queued",
+          "limits"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "active_run": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "queued": {
+            "type": "integer"
+          },
+          "limits": {
+            "type": "object",
+            "required": [
+              "max_users",
+              "max_run_time_secs",
+              "max_queue"
+            ],
+            "properties": {
+              "max_users": {
+                "type": "number"
+              },
+              "max_run_time_secs": {
+                "type": "integer"
+              },
+              "max_queue": {
+                "type": "integer"
+              }
+            }
+          },
+          "workers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkerInfo"
+            }
+          }
+        }
+      },
+      "Labels": {
+        "type": "object",
+        "maxProperties": 32,
+        "propertyNames": {
+          "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+        },
+        "additionalProperties": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "BundleUpload": {
+        "type": "object",
+        "required": [
+          "plan"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/PlanSource"
+          },
+          "files": {
+            "type": "object",
+            "maxProperties": 256,
+            "description": "Binary or extra assets referenced by the plan (relative path to base64 content). Inline scripts and feeder rows need no files.",
+            "propertyNames": {
+              "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*){0,7}$",
+              "maxLength": 200
+            },
+            "additionalProperties": {
+              "type": "string",
+              "contentEncoding": "base64"
+            }
+          },
+          "labels": {
+            "$ref": "#/components/schemas/Labels"
+          }
+        }
+      },
+      "BundleFile": {
+        "type": "object",
+        "required": [
+          "path",
+          "size",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        }
+      },
+      "BundleInfo": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_name",
+          "scenarios",
+          "files",
+          "size",
+          "labels",
+          "created_at",
+          "created_by"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$",
+            "description": "Content hash; uploading identical content returns the same id"
+          },
+          "plan_name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BundleFile"
+            }
+          },
+          "size": {
+            "type": "integer"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/Labels"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string"
+          }
+        }
+      },
+      "BundlePage": {
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BundleInfo"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "RunState": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "stopping",
+          "passed",
+          "failed",
+          "stopped",
+          "cancelled",
+          "error"
+        ]
+      },
+      "RunOverrides": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "users": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Peak users (or iterations/s in arrival-rate mode); replaces the load profile with a ramp"
+          },
+          "spawn_rate": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "run_time": {
+            "type": "string",
+            "examples": [
+              "90s",
+              "10m"
+            ]
+          },
+          "iterations": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tags": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclude_tags": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "type": "string"
+            }
+          },
+          "host": {
+            "type": "string",
+            "format": "uri",
+            "description": "Base URL; must be allowed by the plan and the server"
+          },
+          "workers": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 512,
+            "description": "Pool workers to use: 0 runs on the server only; unset uses every available worker"
+          }
+        }
+      },
+      "RunRequest": {
+        "type": "object",
+        "required": [
+          "bundle"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "bundle": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "overrides": {
+            "$ref": "#/components/schemas/RunOverrides"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/Labels"
+          },
+          "regression": {
+            "$ref": "#/components/schemas/RegressionGate"
+          }
+        }
+      },
+      "ThresholdOutcome": {
+        "type": "object",
+        "required": [
+          "metric",
+          "request",
+          "passed"
+        ],
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "request": {
+            "type": "string"
+          },
+          "min": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "max": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "actual": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "passed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Summary": {
+        "type": "object",
+        "required": [
+          "requests",
+          "failures",
+          "fail_ratio",
+          "rps",
+          "avg_ms",
+          "p50_ms",
+          "p95_ms",
+          "p99_ms",
+          "max_ms",
+          "iterations",
+          "duration_secs",
+          "aborted",
+          "generator_saturated_secs",
+          "thresholds"
+        ],
+        "properties": {
+          "requests": {
+            "type": "integer"
+          },
+          "failures": {
+            "type": "integer"
+          },
+          "iterations": {
+            "type": "integer"
+          },
+          "generator_saturated_secs": {
+            "type": "integer"
+          },
+          "fail_ratio": {
+            "type": "number"
+          },
+          "rps": {
+            "type": "number"
+          },
+          "avg_ms": {
+            "type": "number"
+          },
+          "p50_ms": {
+            "type": "number"
+          },
+          "p95_ms": {
+            "type": "number"
+          },
+          "p99_ms": {
+            "type": "number"
+          },
+          "max_ms": {
+            "type": "number"
+          },
+          "duration_secs": {
+            "type": "number"
+          },
+          "aborted": {
+            "type": "boolean"
+          },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThresholdOutcome"
+            }
+          }
+        }
+      },
+      "Run": {
+        "type": "object",
+        "required": [
+          "id",
+          "seq",
+          "bundle",
+          "plan_name",
+          "state",
+          "created_at",
+          "created_by",
+          "labels",
+          "overrides"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^r[0-9a-f]{24}$"
+          },
+          "seq": {
+            "type": "integer"
+          },
+          "bundle": {
+            "type": "string"
+          },
+          "plan_name": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/RunState"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/Labels"
+          },
+          "overrides": {
+            "$ref": "#/components/schemas/RunOverrides"
+          },
+          "passed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "summary": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Summary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stopped_by": {
+            "type": "string"
+          },
+          "idempotency_key": {
+            "type": "string"
+          },
+          "queue_position": {
+            "type": "integer",
+            "description": "Zero-based position while queued"
+          },
+          "workers": {
+            "type": "integer",
+            "description": "Pool workers that generated load"
+          },
+          "regression": {
+            "$ref": "#/components/schemas/RegressionGate"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/Comparison"
+          }
+        }
+      },
+      "RunPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Run"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "StatsRow": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "failures": {
+            "type": "integer"
+          },
+          "fail_ratio": {
+            "type": "number"
+          },
+          "rps": {
+            "type": "number"
+          },
+          "fail_rps": {
+            "type": "number"
+          },
+          "rps_avg": {
+            "type": "number"
+          },
+          "avg_ms": {
+            "type": "number"
+          },
+          "min_ms": {
+            "type": "number"
+          },
+          "max_ms": {
+            "type": "number"
+          },
+          "p50_ms": {
+            "type": "number"
+          },
+          "p90_ms": {
+            "type": "number"
+          },
+          "p95_ms": {
+            "type": "number"
+          },
+          "p99_ms": {
+            "type": "number"
+          },
+          "p999_ms": {
+            "type": "number"
+          },
+          "avg_bytes": {
+            "type": "number"
+          },
+          "percentiles": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "Snapshot": {
+        "type": "object",
+        "description": "Engine statistics snapshot",
+        "additionalProperties": true,
+        "properties": {
+          "plan": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "running",
+              "stopping",
+              "stopped"
+            ]
+          },
+          "elapsed_secs": {
+            "type": "number"
+          },
+          "users": {
+            "type": "integer"
+          },
+          "target": {
+            "type": "number"
+          },
+          "total": {
+            "$ref": "#/components/schemas/StatsRow"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsRow"
+            }
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsRow"
+            }
+          },
+          "iterations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsRow"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "distribution": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "upper_ms": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "iterations_started": {
+            "type": "integer"
+          },
+          "dropped_iterations": {
+            "type": "integer"
+          },
+          "aborted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Duration": {
+        "type": "string",
+        "description": "Duration such as 500ms, 30s, 2m",
+        "examples": [
+          "30s"
+        ]
+      },
+      "Stage": {
+        "type": "object",
+        "required": [
+          "duration",
+          "target"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "target": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "Target": {
+        "type": "object",
+        "required": [
+          "base_url"
+        ],
+        "additionalProperties": false,
+        "description": "System under test, as reached from the load generator host",
+        "properties": {
+          "base_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "allowed_hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "timeout": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "connect_timeout": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "insecure_tls": {
+            "type": "boolean"
+          },
+          "cookies": {
+            "type": "boolean"
+          },
+          "http2_prior_knowledge": {
+            "type": "boolean"
+          },
+          "pool_idle_per_host": {
+            "type": "integer"
+          },
+          "max_body_bytes": {
+            "type": "integer"
+          },
+          "client": {
+            "type": "string",
+            "enum": [
+              "per_user",
+              "shared"
+            ]
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "proxy": {
+            "type": "string"
+          },
+          "proxy_auth_env": {
+            "type": "string"
+          },
+          "ca_cert": {
+            "type": "string"
+          },
+          "client_cert": {
+            "type": "string"
+          },
+          "client_key": {
+            "type": "string"
+          },
+          "retries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "retry_backoff": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "retry_on": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "Load": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "users",
+              "arrival_rate"
+            ],
+            "default": "users"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Stage"
+            }
+          },
+          "shape_script": {
+            "type": "string"
+          },
+          "shape_source": {
+            "type": "string",
+            "description": "Inline shape script; stored in the bundle"
+          },
+          "max_users": {
+            "type": "integer"
+          },
+          "preallocate": {
+            "type": "integer"
+          },
+          "graceful_stop": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "iterations": {
+            "type": "integer"
+          },
+          "reset_stats_after_ramp": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclude_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Wait": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "between"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "between": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Duration"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "constant"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "constant": {
+                "$ref": "#/components/schemas/Duration"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "pacing"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "pacing": {
+                "$ref": "#/components/schemas/Duration"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "throughput"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "throughput": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "poisson"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "poisson": {
+                "$ref": "#/components/schemas/Duration"
+              }
+            }
+          }
+        ]
+      },
+      "Step": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Exactly one of: a request, think, feed, set, txn_begin, txn_end or batch",
+        "properties": {
+          "get": {
+            "type": "string",
+            "description": "GET request path or absolute URL; supports ${var} templates"
+          },
+          "post": {
+            "type": "string",
+            "description": "POST request path or absolute URL; supports ${var} templates"
+          },
+          "put": {
+            "type": "string",
+            "description": "PUT request path or absolute URL; supports ${var} templates"
+          },
+          "patch": {
+            "type": "string",
+            "description": "PATCH request path or absolute URL; supports ${var} templates"
+          },
+          "delete": {
+            "type": "string",
+            "description": "DELETE request path or absolute URL; supports ${var} templates"
+          },
+          "head": {
+            "type": "string",
+            "description": "HEAD request path or absolute URL; supports ${var} templates"
+          },
+          "method": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Statistics name"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "query": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "json": {
+            "description": "JSON body; strings support ${var} templates"
+          },
+          "body": {
+            "type": "string"
+          },
+          "form": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expect": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              }
+            ]
+          },
+          "contains": {
+            "type": "string"
+          },
+          "capture": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "description": "json.<path>, header.<name>, status, body or between:<left>|<right>"
+            }
+          },
+          "timeout": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "retries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "continue_on_failure": {
+            "type": "boolean"
+          },
+          "sse": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reconnects": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "context": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "think": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Duration"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Duration"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            ]
+          },
+          "feed": {
+            "type": "string",
+            "description": "Reads the next feeder row into the variable of the same name"
+          },
+          "set": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "txn_begin": {
+            "type": "string"
+          },
+          "txn_end": {
+            "type": "string"
+          },
+          "batch": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Step"
+            }
+          },
+          "concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          }
+        }
+      },
+      "Scenario": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "step": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Step"
+            }
+          },
+          "on_start": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Step"
+            }
+          },
+          "source": {
+            "type": "string",
+            "description": "Inline script source; stored in the bundle"
+          },
+          "script": {
+            "type": "string",
+            "description": "Script file path inside the bundle"
+          },
+          "native": {
+            "type": "string"
+          },
+          "wait": {
+            "$ref": "#/components/schemas/Wait"
+          },
+          "fixed_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Feeder": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sequential",
+              "random"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "description": "Inline data: objects, or arrays matching columns",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object"
+                },
+                {
+                  "type": "array"
+                }
+              ]
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "path": {
+            "type": "string",
+            "description": "CSV file inside the bundle"
+          }
+        }
+      },
+      "Threshold": {
+        "type": "object",
+        "required": [
+          "metric"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "metric": {
+            "type": "string",
+            "enum": [
+              "p50",
+              "p90",
+              "p95",
+              "p99",
+              "avg",
+              "max",
+              "error_rate",
+              "rps",
+              "dropped_iterations"
+            ]
+          },
+          "request": {
+            "type": "string",
+            "default": "*"
+          },
+          "max": {
+            "type": "number"
+          },
+          "min": {
+            "type": "number"
+          },
+          "abort_on_fail": {
+            "type": "boolean"
+          },
+          "abort_delay": {
+            "$ref": "#/components/schemas/Duration"
+          }
+        }
+      },
+      "PlanDocument": {
+        "type": "object",
+        "required": [
+          "target",
+          "load",
+          "scenario"
+        ],
+        "additionalProperties": false,
+        "description": "Structured plan. Null values are rejected; omit optional fields instead.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "target": {
+            "$ref": "#/components/schemas/Target"
+          },
+          "load": {
+            "$ref": "#/components/schemas/Load"
+          },
+          "scenario": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/Scenario"
+            }
+          },
+          "feeder": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Feeder"
+            }
+          },
+          "threshold": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Threshold"
+            }
+          },
+          "report": {
+            "type": "object",
+            "properties": {
+              "percentiles": {
+                "type": "array",
+                "maxItems": 12,
+                "items": {
+                  "type": "number"
+                }
+              },
+              "otlp": {
+                "type": "object"
+              },
+              "influx": {
+                "type": "object"
+              }
+            }
+          },
+          "protocols": {
+            "type": "object",
+            "description": "grpc, mqtt, kafka and sql connection settings"
+          }
+        }
+      },
+      "PlanSource": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PlanDocument"
+          },
+          {
+            "type": "string",
+            "description": "Plan file text (TOML)",
+            "maxLength": 1048576
+          }
+        ]
+      },
+      "PlanCheck": {
+        "type": "object",
+        "required": [
+          "name",
+          "scenarios",
+          "files",
+          "document"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Files the bundle must still carry"
+          },
+          "document": {
+            "type": "object"
+          }
+        }
+      },
+      "RegressionGate": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Fail the run when it is worse than a baseline run beyond these limits",
+        "properties": {
+          "baseline": {
+            "type": "string",
+            "default": "auto",
+            "description": "'auto' (latest passed run of the same plan) or a run id"
+          },
+          "max_regression_pct": {
+            "type": "number",
+            "default": 10
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "p50",
+                "p95",
+                "p99",
+                "avg",
+                "error_rate",
+                "rps"
+              ]
+            },
+            "default": [
+              "p95",
+              "p99",
+              "error_rate"
+            ]
+          },
+          "min_samples": {
+            "type": "integer",
+            "default": 30
+          },
+          "min_change_ms": {
+            "type": "number",
+            "default": 1
+          },
+          "max_error_rate_increase": {
+            "type": "number",
+            "default": 0.01
+          }
+        }
+      },
+      "MetricChange": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "p50",
+              "p95",
+              "p99",
+              "avg",
+              "error_rate",
+              "rps"
+            ]
+          },
+          "baseline": {
+            "type": "number"
+          },
+          "current": {
+            "type": "number"
+          },
+          "change_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "regressed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Comparison": {
+        "type": "object",
+        "required": [
+          "passed",
+          "regressions",
+          "changes",
+          "unmatched"
+        ],
+        "properties": {
+          "baseline": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "regressions": {
+            "type": "integer"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricChange"
+            }
+          },
+          "unmatched": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WorkerInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "cores": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "users": {
+            "type": "integer"
+          },
+          "iterations": {
+            "type": "integer"
+          },
+          "saturated": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

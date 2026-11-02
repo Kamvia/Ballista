@@ -1,0 +1,168 @@
+<!-- File: ballista/assets/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Load Console</title>
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark"></span>Load Console</div>
+    <div class="plan">
+      <span id="plan-name">-</span>
+      <span class="muted" id="plan-target"></span>
+    </div>
+    <span class="state" id="run-state" data-state="idle">idle</span>
+    <nav class="top-actions">
+      <a class="btn ghost" href="/api/report.html" download>HTML report</a>
+      <a class="btn ghost" href="/api/report.json" download>JSON</a>
+      <a class="btn ghost" href="/api/stats.csv" download>Stats CSV</a>
+      <a class="btn ghost" href="/api/history.csv" download>History CSV</a>
+      <a class="btn ghost" href="/api/failures.csv" download>Failures CSV</a>
+      <button class="btn ghost" id="btn-logout" type="button">Sign out</button>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <section class="controls panel">
+      <form class="control-row" id="start-form" novalidate>
+        <label for="start-users" id="start-users-label">Users</label>
+        <input id="start-users" type="number" min="0" step="1" inputmode="decimal" placeholder="profile">
+        <label for="start-rate">Ramp /s</label>
+        <input id="start-rate" type="number" min="0" step="any" inputmode="decimal" placeholder="auto">
+        <label for="start-host">Host</label>
+        <select id="start-host"></select>
+        <label for="start-time">Run time (s)</label>
+        <input id="start-time" type="number" min="1" step="1" inputmode="numeric" placeholder="profile">
+        <button class="btn primary" id="btn-start" type="submit">Start run</button>
+        <button class="btn danger" id="btn-stop" type="button">Stop</button>
+        <button class="btn" id="btn-reset" type="button">Reset stats</button>
+      </form>
+      <form class="control-row" id="target-form" novalidate>
+        <label for="target-input" id="target-label">Users</label>
+        <input id="target-input" type="number" min="0" step="1" inputmode="decimal" required>
+        <label for="ramp-input">Ramp /s</label>
+        <input id="ramp-input" type="number" min="0" step="1" value="10" inputmode="decimal">
+        <button class="btn" type="submit">Apply override</button>
+        <button class="btn ghost" id="btn-resume" type="button">Resume profile</button>
+      </form>
+      <fieldset class="picker" id="scenario-picker">
+        <legend>Scenarios</legend>
+        <div class="picker-list" id="scenario-list"></div>
+      </fieldset>
+      <p class="muted small" id="profile-info"></p>
+      <p class="notice" id="notice" role="status" hidden></p>
+    </section>
+
+    <section class="cards" aria-label="Summary">
+      <div class="card"><span class="label" id="users-label">Users</span><b id="m-users">0</b><span class="sub" id="m-target">target 0</span></div>
+      <div class="card"><span class="label">Requests/s</span><b id="m-rps">0</b><span class="sub" id="m-count">0 total</span></div>
+      <div class="card"><span class="label">Failures</span><b id="m-fail">0%</b><span class="sub" id="m-failrps">0/s</span></div>
+      <div class="card"><span class="label">p50</span><b id="m-p50">0</b><span class="sub">ms</span></div>
+      <div class="card"><span class="label">p95</span><b id="m-p95">0</b><span class="sub">ms</span></div>
+      <div class="card"><span class="label">p99</span><b id="m-p99">0</b><span class="sub">ms</span></div>
+      <div class="card"><span class="label">Dropped</span><b id="m-dropped">0</b><span class="sub">iterations</span></div>
+      <div class="card"><span class="label">Elapsed</span><b id="m-elapsed">0s</b><span class="sub" id="m-mode">-</span></div>
+      <div class="card" id="gen-card"><span class="label">Generator CPU</span><b id="m-cpu">-</b><span class="sub" id="m-lag">lag 0 ms</span></div>
+      <div class="card"><span class="label">Iterations</span><b id="m-iter">0</b><span class="sub" id="m-iter-limit">no limit</span></div>
+    </section>
+
+    <section class="charts">
+      <figure class="panel"><figcaption>Throughput</figcaption><canvas id="c-rps" height="200"></canvas></figure>
+      <figure class="panel"><figcaption>Latency (ms)</figcaption><canvas id="c-lat" height="200"></canvas></figure>
+      <figure class="panel"><figcaption>Load</figcaption><canvas id="c-users" height="200"></canvas></figure>
+    </section>
+
+    <section class="panel">
+      <div class="tabs" role="tablist">
+        <button class="tab active" role="tab" data-tab="requests" type="button">Requests</button>
+        <button class="tab" role="tab" data-tab="iterations" type="button">Iterations</button>
+        <button class="tab" role="tab" data-tab="transactions" type="button">Transactions <span class="count" id="tx-count">0</span></button>
+        <button class="tab" role="tab" data-tab="ratio" type="button">Ratio</button>
+        <button class="tab" role="tab" data-tab="errors" type="button">Errors <span class="count" id="err-count">0</span></button>
+        <button class="tab" role="tab" data-tab="thresholds" type="button">Thresholds <span class="count" id="th-count">0</span></button>
+        <button class="tab" role="tab" data-tab="workers" type="button" id="workers-tab" hidden>Workers <span class="count" id="wk-count">0</span></button>
+        <button class="tab" role="tab" data-tab="logs" type="button">Logs</button>
+      </div>
+
+      <div class="tab-body" data-body="requests">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th class="l">Scenario</th><th class="l">Method</th><th class="l">Name</th><th>Count</th><th>Fails</th><th>Req/s</th>
+              <th>Avg</th><th>Min</th><th>p50</th><th>p90</th><th>p95</th><th>p99</th><th>Max</th><th>Avg bytes</th>
+            </tr></thead>
+            <tbody id="t-requests"></tbody>
+            <tfoot id="t-total"></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="tab-body" data-body="iterations" hidden>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th class="l">Scenario</th><th>Count</th><th>Fails</th><th>Iter/s</th><th>Avg</th><th>p50</th><th>p95</th><th>p99</th><th>Max</th>
+            </tr></thead>
+            <tbody id="t-iterations"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tab-body" data-body="transactions" hidden>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th class="l">Scenario</th><th class="l">Name</th><th>Count</th><th>Fails</th><th>Per s</th><th>Avg</th><th>p50</th><th>p95</th><th>p99</th><th>Max</th>
+            </tr></thead>
+            <tbody id="t-transactions"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tab-body" data-body="ratio" hidden>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="l">Scenario</th><th>Configured</th><th>Users</th><th>User share</th><th>Iterations</th><th>Iteration share</th></tr></thead>
+            <tbody id="t-ratio-scenarios"></tbody>
+          </table>
+        </div>
+        <div class="table-wrap spaced">
+          <table>
+            <thead><tr><th class="l">Scenario</th><th class="l">Task</th><th>Executions</th><th>Share in scenario</th></tr></thead>
+            <tbody id="t-ratio-tasks"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tab-body" data-body="errors" hidden>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Count</th><th class="l">Scenario</th><th class="l">Request</th><th class="l">Message</th></tr></thead>
+            <tbody id="t-errors"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tab-body" data-body="thresholds" hidden>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="l">Metric</th><th class="l">Request</th><th>Min</th><th>Max</th><th>Actual</th><th>Result</th></tr></thead>
+            <tbody id="t-thresholds"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tab-body" data-body="workers" hidden>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th class="l">Name</th><th class="l">Address</th><th class="l">State</th><th>Cores</th><th>Users</th><th>Target</th><th>Iterations</th><th>CPU</th><th>Lag ms</th><th>Last report</th></tr></thead>
+            <tbody id="t-workers"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tab-body" data-body="logs" hidden>
+        <div class="log-view" id="log-view" role="log" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

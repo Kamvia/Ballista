@@ -1,0 +1,50 @@
+# File: ballista/.gitignore
+
+# Build output
+/target
+/examples/out
+/sdks/java/target
+/sdks/node/dist
+/sdks/python/dist
+/sdks/python/build
+*.egg-info/
+
+# Dependencies
+/sdks/node/node_modules
+/sdks/php/vendor
+# Library lock file; applications resolve their own versions
+/sdks/php/composer.lock
+
+# Tool caches
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.phpunit.cache/
+.phpunit.result.cache
+*.py[cod]
+coverage/
+.coverage
+
+# Runtime data and reports
+ballista-data/
+perf-reports/
+/benchmarks/results/
+*.jtl
+
+# Secrets and local configuration
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+tokens.env
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+# File: ballista/benchmarks/plan.toml
+name = "concurrency bench"
+[target]
+base_url = "http://127.0.0.1:8080/"
+timeout = "30s"
+pool_idle_per_host = 1
+[load]
+mode = "users"
+max_users = 20000
+stages = [{ duration = "5s", target = 100 }, { duration = "15s", target = 100 }]
+[[scenario]]
+name = "reader"
+wait = { constant = "1s" }
+step = [{ get = "/items/3", name = "item" }]

@@ -1,0 +1,5 @@
+# File: ballista/.gitattributes
+* text=auto eol=lf
+*.pb binary
+*.png binary
+*.bat text eol=crlf

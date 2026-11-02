@@ -1,0 +1,35 @@
+{
+    "name": "ballista/client",
+    "description": "Client for the load test run manager API",
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/Kamvia/Ballista",
+    "support": {
+        "issues": "https://github.com/Kamvia/Ballista/issues",
+        "source": "https://github.com/Kamvia/Ballista"
+    },
+    "require": {
+        "php": ">=8.2",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ballista\\Client\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ballista\\Client\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/ballista-client"
+    ],
+    "config": {
+        "sort-packages": true
+    }
+}

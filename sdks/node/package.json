@@ -1,0 +1,26 @@
+{
+  "name": "ballista-client",
+  "version": "0.1.0",
+  "description": "Client for the load test run manager API",
+  "repository": { "type": "git", "url": "git+https://github.com/Kamvia/Ballista.git", "directory": "sdks/node" },
+  "homepage": "https://github.com/Kamvia/Ballista/tree/main/sdks/node",
+  "bugs": { "url": "https://github.com/Kamvia/Ballista/issues" },
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+  },
+  "bin": { "ballista-client": "./dist/cli.js" },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- File: ballista/sdks/php/phpunit.xml -->
+<phpunit bootstrap="vendor/autoload.php" colors="false" failOnWarning="true" failOnRisky="true">
+    <testsuites>
+        <testsuite name="unit">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

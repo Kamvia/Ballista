@@ -1,0 +1,25 @@
+<!-- File: ballista/assets/console/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Sign in - Load test console</title>
+  <link rel="stylesheet" href="/console/assets/console.css">
+</head>
+<body class="signin">
+  <main class="signin-box">
+    <h1>Load test console</h1>
+    <p class="muted">Sign in with an API token. What you can do here follows the token's scope: read, run or admin.</p>
+    <form id="signin-form" novalidate>
+      <label for="token">API token</label>
+      <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" required maxlength="512">
+      <button class="btn primary" type="submit" id="signin-btn">Sign in</button>
+      <p class="form-error" id="signin-error" role="alert" hidden></p>
+    </form>
+    <p class="small muted">The token is exchanged for a session that ends after 30 minutes of inactivity. It is not stored in the browser.</p>
+  </main>
+  <script src="/console/assets/consoleLogin.js"></script>
+</body>
+</html>

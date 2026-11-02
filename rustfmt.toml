@@ -1,0 +1,4 @@
+# File: ballista/rustfmt.toml
+edition = "2024"
+max_width = 140
+use_small_heuristics = "Max"

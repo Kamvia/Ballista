@@ -1,0 +1,153 @@
+{
+  "name": "shop steps",
+  "target": {
+    "base_url": "http://127.0.0.1:8080/",
+    "headers": {
+      "accept": "application/json"
+    }
+  },
+  "load": {
+    "mode": "users",
+    "stages": [
+      {
+        "duration": "15s",
+        "target": 10
+      }
+    ]
+  },
+  "scenario": [
+    {
+      "name": "buyer",
+      "wait": {
+        "between": [
+          "200ms",
+          "600ms"
+        ]
+      },
+      "on_start": [
+        {
+          "feed": "users"
+        },
+        {
+          "post": "/login",
+          "name": "login",
+          "json": {
+            "username": "${users.username}",
+            "password": "${users.password}"
+          },
+          "capture": {
+            "token": "json.token"
+          }
+        }
+      ],
+      "step": [
+        {
+          "get": "/items",
+          "name": "list items",
+          "query": {
+            "q": "item"
+          },
+          "capture": {
+            "item_id": "json.items.2.id"
+          }
+        },
+        {
+          "think": [
+            "100ms",
+            "300ms"
+          ]
+        },
+        {
+          "txn_begin": "purchase"
+        },
+        {
+          "get": "/items/${item_id}",
+          "contains": "stock"
+        },
+        {
+          "post": "/cart",
+          "name": "add to cart",
+          "headers": {
+            "authorization": "Bearer ${token}"
+          },
+          "json": {
+            "item": "${item_id}",
+            "qty": 1,
+            "request_id": "${uuid()}"
+          },
+          "expect": [
+            201,
+            503
+          ]
+        },
+        {
+          "txn_end": "purchase"
+        },
+        {
+          "name": "catalog_page",
+          "concurrency": 3,
+          "batch": [
+            {
+              "get": "/items"
+            },
+            {
+              "get": "/items/1",
+              "name": "item detail"
+            },
+            {
+              "get": "/slow",
+              "name": "slow page"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ticker",
+      "weight": 1,
+      "step": [
+        {
+          "get": "/sse",
+          "name": "price stream",
+          "sse": 6,
+          "reconnects": 3
+        }
+      ]
+    }
+  ],
+  "feeder": [
+    {
+      "name": "users",
+      "mode": "sequential",
+      "rows": [
+        {
+          "username": "alice",
+          "password": "alice-secret"
+        },
+        {
+          "username": "bob",
+          "password": "bob-secret"
+        },
+        {
+          "username": "carol",
+          "password": "carol-secret"
+        },
+        {
+          "username": "dave",
+          "password": "dave-secret"
+        },
+        {
+          "username": "erin, jr",
+          "password": "erin-secret"
+        }
+      ]
+    }
+  ],
+  "threshold": [
+    {
+      "metric": "p95",
+      "request": "purchase",
+      "max": 300.0
+    }
+  ]
+}

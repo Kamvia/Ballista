@@ -1,0 +1,21 @@
+# File: ballista/.cargo/audit.toml
+# Reviewed exceptions for `cargo audit`. Each entry states why it does not affect this project.
+# Re-check whenever rumqttc or rhai release a new version.
+
+[advisories]
+ignore = [
+    # rustls-webpki 0.102.8 is pulled in only by rumqttc 0.25.1 (latest release), behind the optional
+    # `mqtt` feature. rumqttc uses that crate solely for an error type. Ballista always passes its own
+    # rustls ClientConfig (TlsConfiguration::Rustls), so certificates are verified by rustls-webpki
+    # 0.103.16 or later, which contains the fixes.
+    "RUSTSEC-2026-0049",
+    "RUSTSEC-2026-0098",
+    "RUSTSEC-2026-0099",
+    "RUSTSEC-2026-0104",
+    "RUSTSEC-2026-0382",
+    # rustls-pemfile is unmaintained; pulled in only by rumqttc for the PEM path Ballista does not use.
+    "RUSTSEC-2025-0134",
+    # smartstring is unmaintained; internal string type of the rhai script engine, no known vulnerability.
+    "RUSTSEC-2026-0249",
+]
+informational_warnings = ["unmaintained", "unsound", "notice"]

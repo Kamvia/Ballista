@@ -1,0 +1,31 @@
+<!-- File: ballista/assets/console/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Load test console</title>
+  <link rel="stylesheet" href="/console/assets/console.css">
+</head>
+<body>
+  <a class="skip" href="#view">Skip to content</a>
+  <div class="shell">
+    <nav class="rail" aria-label="Main">
+      <div class="rail-title">Load test console</div>
+      <a class="rail-link" href="#/" data-nav="overview">Runs</a>
+      <a class="rail-link" href="#/bundles" data-nav="bundles">Plans</a>
+      <a class="rail-link" href="#/new" data-nav="new" data-scope="run">New plan</a>
+      <a class="rail-link" href="#/workers" data-nav="workers">Workers</a>
+      <div class="rail-foot">
+        <div class="who" id="who"></div>
+        <button class="btn ghost small" type="button" id="signout">Sign out</button>
+        <div class="small muted" id="server-version"></div>
+      </div>
+    </nav>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script src="/console/assets/console.js"></script>
+</body>
+</html>
